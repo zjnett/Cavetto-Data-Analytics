@@ -4,6 +4,13 @@ import pandas as pd
 import datetime 
 from random import randrange
 
+def generate_random_dates(n_dates):
+    start = datetime.datetime(2022, 3, 22,13,00)
+    dates = []
+    for i in range(n_dates):
+        dates.append(random_date(start))
+    return dates
+
 # Open file and read credentials into config dictionary
 def read_config(file):
     config = {}
@@ -34,8 +41,20 @@ def random_date(start):
     start = start + datetime.timedelta(minutes=randrange(60))
     return start
 
+def get_num_data_points():
+    cnx = connect()
+    if cnx:
+        # Query database
+        cursor = cnx.cursor()
+        query = ("SELECT * FROM `test_data`")
+        cursor.execute(query)
+        num_vals = cursor.rowcount
+        cnx.close()
+        return num_vals
+    return None
+
 # Main for testing
-def database():
+def database(dates):
     cnx = connect()
     if cnx:
         # Query database
@@ -50,8 +69,9 @@ def database():
         i = 0
         for (value) in cursor:
             # Add value to pandas dataframe
-            df_new_row = pd.DataFrame({'value' : value[0], 'time' : random_date(start)}, index=[i])
+            df_new_row = pd.DataFrame({'value' : value[0], 'time' : dates[i]}, index=[i])
             df = pd.concat([df, df_new_row])
             i += 1
-        return df, cnx
-    return None, None
+        cnx.close()
+        return df
+    return None
