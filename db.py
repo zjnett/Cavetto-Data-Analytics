@@ -54,22 +54,20 @@ def get_num_data_points():
     return None
 
 # Main for testing
-def database(dates):
+def database(table_name):
     cnx = connect()
     if cnx:
         # Query database
         cursor = cnx.cursor()
-        query = ("SELECT * FROM `test_data`")
+        query = ("SELECT * FROM `{}`".format(table_name))
         cursor.execute(query)
-        # Sample startdate
-        start = datetime.datetime(2022, 3, 22,13,00)
         # Create empty pandas dataframe
         df = pd.DataFrame(columns=['value', 'time'])
         num_vals = cursor.rowcount
         i = 0
         for (value) in cursor:
             # Add value to pandas dataframe
-            df_new_row = pd.DataFrame({'value' : value[0], 'time' : dates[i]}, index=[i])
+            df_new_row = pd.DataFrame({'value' : value[1], 'time' : value[2]}, index=[i])
             df = pd.concat([df, df_new_row])
             i += 1
         cnx.close()
