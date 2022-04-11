@@ -4,7 +4,7 @@ import plotly.express as px
 import pandas as pd
 import db
 
-GRAPH_INTERVAL = os.environ.get("GRAPH_INTERVAL", 5000)
+GRAPH_INTERVAL = os.environ.get("GRAPH_INTERVAL", 100000)
 
 app = Dash(__name__)
 
