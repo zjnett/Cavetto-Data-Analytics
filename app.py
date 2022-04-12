@@ -7,6 +7,7 @@ import db
 GRAPH_INTERVAL = os.environ.get("GRAPH_INTERVAL", 5000)
 
 app = Dash(__name__)
+server = app.server
 
 # Pre-generate a bunch of dates
 # This is temporary (for testing)
