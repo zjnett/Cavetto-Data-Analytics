@@ -1,3 +1,4 @@
+from socket import NI_NAMEREQD
 import mysql.connector
 from mysql.connector import errorcode
 import pandas as pd
@@ -85,9 +86,12 @@ def save_last_thermal_image():
         cursor.execute(query)
         # Write blob as static image
         for (value) in cursor:
-            with open('static/thermal_image.jpg', 'wb') as f:
+            with open('assets/thermal_image.jpg', 'wb') as f:
                 f.write(value[1])
+            min, max = value[3], value[4]
         cnx.close()
+        return min, max
+    return None, None # Return temperature (min, max)
 
 # Retrieve RGB image from database and save it to static directory
 def save_last_rgb_image():
@@ -100,6 +104,26 @@ def save_last_rgb_image():
         cursor.execute(query)
         # Write blob as static image
         for (value) in cursor:
-            with open('static/rgb_image.jpg', 'wb') as f:
+            with open('assets/rgb_image.jpg', 'wb') as f:
                 f.write(value[1])
+            time = value[2]
         cnx.close()
+        return time
+    return None
+
+# Read box string of most recent data point in boxes table and return it
+def read_boxes():
+    time = None
+    box_string = None
+    # Connect to database
+    cnx = connect()
+    if cnx:
+        # Query database
+        cursor = cnx.cursor()
+        query = ("SELECT * FROM `boxes` ORDER BY `time` DESC LIMIT 1")
+        cursor.execute(query)
+        for (value) in cursor:
+            time = value[1]
+            box_string = value[2]
+        cnx.close()
+    return time, box_string

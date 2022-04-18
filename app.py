@@ -2,14 +2,17 @@ import os
 from dash import Dash, html, dcc, Input, Output
 import dash_bootstrap_components as dbc
 import plotly.express as px
+import plotly.graph_objects as go
+import numpy as np
+import cv2
 import pandas as pd
 import db
 import stats
-import flask
+import ast
 
-GRAPH_INTERVAL = os.environ.get("GRAPH_INTERVAL", 5000)
+GRAPH_INTERVAL = os.environ.get("GRAPH_INTERVAL", 10000)
 
-static_image_path = "/static/"
+static_image_path = "assets/"
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 server = app.server
@@ -50,8 +53,94 @@ def serve_layout():
                    markers=True, labels=CO2_LABELS)
 
     # Download images if they do not exist
-    db.save_last_thermal_image()
-    db.save_last_rgb_image()
+    max_temp, min_temp = db.save_last_thermal_image()
+    rgb_time = db.save_last_rgb_image()
+
+    # Import thermal image as numpy array
+    thermal_image = cv2.imread(
+        static_image_path + "thermal_image.jpg", 0)  # grayscale
+    # Reduce temperatures by factor of TLinear (0.01 for Lepton)
+    thermal_image = np.interp(thermal_image, [0, 255], [
+                              (min_temp*0.01), (max_temp*0.01)])
+    # Convert image from Kelvin to Celsius
+    thermal_image = thermal_image - 273.15
+    # Convert image from Kelvin to Fahrenheit
+    # thermal_image = (thermal_image * 9/5) - 459.67
+    # Flip image vertically
+    thermal_image = np.flip(thermal_image, 0)
+
+    hovertext = list()
+    for i in range(thermal_image.shape[0]):
+        hovertext.append(list())
+        for j in range(thermal_image.shape[1]):
+            hovertext[-1].append('y: {}<br />x: {}<br />temp: {}°C'.format(i, j, thermal_image[i][j]))
+
+    # Import RGB image as numpy array
+    rgb_image = cv2.imread(static_image_path + "rgb_image.jpg")
+    # Set colorspace of numpy array to sRGB
+    rgb_image = cv2.cvtColor(rgb_image, cv2.COLOR_BGR2RGB)
+
+    fig5 = go.Figure(data=go.Heatmap(
+        z=thermal_image, colorbar={"title": 'Temperature (°C)'}, hoverinfo='text', hovertext=hovertext))
+    # fig5.update_layout(coloraxis_showscale=True)
+    fig6 = go.Figure(go.Image(z=rgb_image))
+
+    # Read boxes as str from database
+    box_time, boxes = db.read_boxes()
+    boxes_l = None
+    if boxes:
+        boxes_l = ast.literal_eval(boxes)
+
+    # Check if time is the same for rgb and boxes
+    # If so, draw boxes onto fig6
+    if rgb_time == box_time:
+        for box in boxes_l:
+            fig6.add_shape(
+                type="rect",
+                x0=round(box[0]),
+                y0=round(box[1]),
+                x1=round(box[0]+box[2]),
+                y1=round(box[1]+box[3]),
+                line=dict(
+                    color="red",
+                    width=2
+                )
+            )
+
+    """
+    # Create graph figure for thermal image
+    fig5 = go.Figure()
+    # Add images
+    fig5.add_layout_image(
+        dict(
+            source="assets/thermal_image.jpg",
+            xref="x",
+            yref="y",
+            x=-1,
+            y=-1,
+            sizex=1,
+            sizey=1,
+            sizing="fill",
+            opacity=1.0,
+            layer="below")
+)
+
+    # Create graph figure for RGB image
+    fig6 = go.Figure()
+    fig6.add_layout_image(
+        dict(
+            source="assets/rgb_image.jpg",
+                        xref="x",
+            yref="y",
+            x=-1,
+            y=-1,
+            sizex=1,
+            sizey=1,
+            sizing="fill",
+            opacity=1.0,
+            layer="below")
+    )
+    """
 
     # df_methane_24hr = stats.compile_24hr_dataframe(df_methane)
     # df_methane_stats = stats.compute_statistics(df_methane_24hr)
@@ -234,13 +323,9 @@ def serve_layout():
                                                 "The most recent thermal image collected from the camera node."
                                             ),
                                             html.Div(children=[
-                                                html.Img(
-                                                    src="static/thermal_image.jpg",
-                                                    id="thermal-image",
-                                                    style={
-                                                        "width": "100%",
-                                                        "height": "auto"
-                                                    }
+                                                dcc.Graph(
+                                                    id='graph5',
+                                                    figure=fig5
                                                 ),
                                                 dcc.Interval(
                                                     id='thermal-image-update',
@@ -261,13 +346,9 @@ def serve_layout():
                                                 "The most recent RGB image collected from the camera node."
                                             ),
                                             html.Div(children=[
-                                                html.Img(
-                                                    src="static/rgb_image.jpg",
-                                                    id="rgb-image",
-                                                    style={
-                                                        "width": "100%",
-                                                        "height": "auto"
-                                                    }
+                                                dcc.Graph(
+                                                    id='graph6',
+                                                    figure=fig6
                                                 ),
                                                 dcc.Interval(
                                                     id='rgb-image-update',
@@ -387,18 +468,20 @@ def update_co2_stats(interval):
     return update
 
 
+"""
 @app.callback(Output('hidden-div1', 'children'),
               Input('thermal-image-update', 'n_intervals'))
 def update_thermal_image(interval):
     db.save_last_thermal_image()
     return None
 
+
 @app.callback(Output('hidden-div2', 'children'),
               Input('rgb-image-update', 'n_intervals'))
 def update_rgb_image(interval):
     db.save_last_rgb_image()
     return None
-
+"""
 
 if __name__ == "__main__":
     app.run_server(debug=True)
