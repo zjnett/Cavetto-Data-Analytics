@@ -73,3 +73,33 @@ def database(table_name):
         cnx.close()
         return df
     return None
+
+# Retrieve thermal image from database and save it to static directory
+def save_last_thermal_image():
+    # Connect to database
+    cnx = connect()
+    if cnx:
+        # Query database
+        cursor = cnx.cursor()
+        query = ("SELECT * FROM `thermal_images` ORDER BY `time` DESC LIMIT 1")
+        cursor.execute(query)
+        # Write blob as static image
+        for (value) in cursor:
+            with open('static/thermal_image.jpg', 'wb') as f:
+                f.write(value[1])
+        cnx.close()
+
+# Retrieve RGB image from database and save it to static directory
+def save_last_rgb_image():
+    # Connect to database
+    cnx = connect()
+    if cnx:
+        # Query database
+        cursor = cnx.cursor()
+        query = ("SELECT * FROM `rgb_images` ORDER BY `time` DESC LIMIT 1")
+        cursor.execute(query)
+        # Write blob as static image
+        for (value) in cursor:
+            with open('static/rgb_image.jpg', 'wb') as f:
+                f.write(value[1])
+        cnx.close()
