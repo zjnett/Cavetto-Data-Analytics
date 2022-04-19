@@ -73,7 +73,8 @@ def serve_layout():
     for i in range(thermal_image.shape[0]):
         hovertext.append(list())
         for j in range(thermal_image.shape[1]):
-            hovertext[-1].append('y: {}<br />x: {}<br />temp: {}°C'.format(i, j, thermal_image[i][j]))
+            hovertext[-1].append('y: {}<br />x: {}<br />temp: {}°C'.format(i,
+                                 j, thermal_image[i][j]))
 
     # Import RGB image as numpy array
     rgb_image = cv2.imread(static_image_path + "rgb_image.jpg")
@@ -161,6 +162,15 @@ def serve_layout():
             [
                 dbc.Row(
                     [
+                        # Logo image
+                        dbc.Col(
+                            html.Img(
+                                src="assets/cavetto-logo.png",
+                                # size="auto",
+                                style={"height": "100px"}
+                            ),
+                            md="auto",
+                        ),
                         dbc.Col(
                             html.Div(
                                 [
@@ -170,8 +180,10 @@ def serve_layout():
                                 ],
                                 id="app-title",
                             ),
-                        )
+                            md="auto",
+                        ),
                     ],
+                    align="center",
                 ),
 
                 dbc.Row(
@@ -198,7 +210,7 @@ def serve_layout():
                                                 "This pane contains the volatile gas readings collected from sensor nodes."
                                             ),
 
-                                            html.H6(
+                                            html.H5(
                                                 "Summary", className="card-subtitle"),
                                             html.Div([
 
@@ -213,7 +225,7 @@ def serve_layout():
                                                 ),
                                             ]),
 
-                                            html.H6(
+                                            html.H5(
                                                 "Methane", className="card-subtitle"),
                                             html.Div([
 
@@ -228,7 +240,7 @@ def serve_layout():
                                                 ),
                                             ]),
 
-                                            html.H6(
+                                            html.H5(
                                                 "Ammonia", className="card-subtitle"),
                                             html.Div([
 
@@ -243,7 +255,7 @@ def serve_layout():
                                                 ),
                                             ]),
 
-                                            html.H6("Carbon Dioxide",
+                                            html.H5("Carbon Dioxide",
                                                     className="card-subtitle"),
                                             html.Div([
 
@@ -273,8 +285,10 @@ def serve_layout():
                                                 "This pane contains relevant statistics for each gas within the last 24 hours."),
                                             dbc.Row(
                                                 [
-                                                    html.P("Loading...",
-                                                           id="methane-stats"),
+                                                    html.H5("Methane",
+                                                            className="card-subtitle"),
+                                                    html.Div("Loading...",
+                                                             id="methane-stats"),
                                                     dcc.Interval(
                                                         id='methane-stats-update',
                                                         interval=GRAPH_INTERVAL
@@ -284,8 +298,10 @@ def serve_layout():
                                             ),
                                             dbc.Row(
                                                 [
-                                                    html.P("Loading...",
-                                                           id="ammonia-stats"),
+                                                    html.H5("Ammonia",
+                                                            className="card-subtitle"),
+                                                    html.Div("Loading...",
+                                                             id="ammonia-stats"),
                                                     dcc.Interval(
                                                         id='ammonia-stats-update',
                                                         interval=GRAPH_INTERVAL
@@ -296,8 +312,10 @@ def serve_layout():
                                             dbc.Row(
                                                 [
                                                     html.Div(children=[
-                                                        html.P("Loading...",
-                                                               id="co2-stats"),
+                                                        html.H5("Carbon Dioxide",
+                                                                className="card-subtitle"),
+                                                        html.Div("Loading...",
+                                                                 id="co2-stats"),
                                                         dcc.Interval(
                                                             id='co2-stats-update',
                                                             interval=GRAPH_INTERVAL
@@ -442,7 +460,21 @@ def update_methane_stats(interval):
     df = df.sort_values(by="time")
     df_24hr = stats.compile_24hr_dataframe(df)
     df_stats = stats.compute_statistics(df_24hr)
-    update = html.P("{}".format(df_stats))
+    update = html.Div(
+        [
+            dcc.Markdown(
+                "**# of Datapoints:** {}\n".format(df_stats['count'])
+                + "**Mean:** {} ppm\n".format(df_stats['mean'])
+                + "**Std. Dev.:** {} ppm\n".format(df_stats['std'])
+                + "**Min:** {} ppm\n".format(df_stats['min'])
+                + "**Q1:** {} ppm\n".format(df_stats['25%'])
+                + "**Q2/Median:** {} ppm\n".format(df_stats['50%'])
+                + "**Q3:** {} ppm\n".format(df_stats['75%'])
+                + "**Max:** {} ppm\n".format(df_stats['max']),
+                style={"white-space": "pre"}
+            )
+        ]
+    )
     return update
 
 
@@ -453,7 +485,21 @@ def update_ammonia_stats(interval):
     df = df.sort_values(by="time")
     df_24hr = stats.compile_24hr_dataframe(df)
     df_stats = stats.compute_statistics(df_24hr)
-    update = html.P("{}".format(df_stats))
+    update = html.Div(
+        [
+            dcc.Markdown(
+                "**# of Datapoints:** {}\n".format(df_stats['count'])
+                + "**Mean:** {} ppm\n".format(df_stats['mean'])
+                + "**Std. Dev.:** {} ppm\n".format(df_stats['std'])
+                + "**Min:** {} ppm\n".format(df_stats['min'])
+                + "**Q1:** {} ppm\n".format(df_stats['25%'])
+                + "**Q2/Median:** {} ppm\n".format(df_stats['50%'])
+                + "**Q3:** {} ppm\n".format(df_stats['75%'])
+                + "**Max:** {} ppm\n".format(df_stats['max']),
+                style={"white-space": "pre"}
+            )
+        ]
+    )
     return update
 
 
@@ -464,7 +510,22 @@ def update_co2_stats(interval):
     df = df.sort_values(by="time")
     df_24hr = stats.compile_24hr_dataframe(df)
     df_stats = stats.compute_statistics(df_24hr)
-    update = html.P("{}".format(df_stats))
+    update = html.Div(
+        [
+            dcc.Markdown(
+                "**# of Datapoints:** {}\n".format(df_stats['count'])
+                + "**Mean:** {} ppm\n".format(df_stats['mean'])
+                + "**Std. Dev.:** {} ppm\n".format(df_stats['std'])
+                + "**Min:** {} ppm\n".format(df_stats['min'])
+                + "**Q1:** {} ppm\n".format(df_stats['25%'])
+                + "**Q2/Median:** {} ppm\n".format(df_stats['50%'])
+                + "**Q3:** {} ppm\n".format(df_stats['75%'])
+                + "**Max:** {} ppm\n".format(df_stats['max']),
+                style={"white-space": "pre"}
+            )
+        ]
+    )
+    # update = html.P("{}".format(df_stats))
     return update
 
 
